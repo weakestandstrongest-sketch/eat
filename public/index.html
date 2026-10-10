@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ごはんサーチ</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="header">
+    <h1 class="title">🍚 ごはんサーチ</h1>
+    <p class="lead">場所を入れると、周りのお店をジャンル別・評価付きで一覧にします</p>
+  </header>
+
+  <main class="main">
+    <form id="search-form" class="search">
+      <input id="q" class="search-input" type="search" name="q" placeholder="例: 名古屋駅" autocomplete="off">
+      <select id="radius" class="search-radius" aria-label="検索範囲">
+        <option value="500">500m</option>
+        <option value="1000" selected>1km</option>
+        <option value="2000">2km</option>
+        <option value="3000">3km</option>
+      </select>
+      <button class="btn btn-primary" type="submit">検索</button>
+      <button id="here" class="btn" type="button">📍 現在地</button>
+    </form>
+
+    <div id="status" class="status" role="status" hidden></div>
+
+    <section id="results" hidden>
+      <div id="demo-banner" class="banner" hidden>
+        デモモードです。表示されているお店は架空のデータです（API キーを設定すると実データになります）。
+      </div>
+      <p id="center" class="center"></p>
+
+      <div class="controls">
+        <label>並び替え
+          <select id="sort">
+            <option value="score">おすすめ順</option>
+            <option value="rating">評価が高い順</option>
+            <option value="reviews">口コミが多い順</option>
+            <option value="distance">近い順</option>
+          </select>
+        </label>
+        <label>評価
+          <select id="min-rating">
+            <option value="0">指定なし</option>
+            <option value="3.5">3.5 以上</option>
+            <option value="4">4.0 以上</option>
+            <option value="4.5">4.5 以上</option>
+          </select>
+        </label>
+        <label class="check"><input id="open-now" type="checkbox"> 営業中のみ</label>
+      </div>
+
+      <nav id="tabs" class="tabs" aria-label="ジャンル"></nav>
+      <div id="list"></div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    評価・口コミ数のデータ提供: Google Maps ／ 「食べログで探す」は食べログ内の検索結果を開きます
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

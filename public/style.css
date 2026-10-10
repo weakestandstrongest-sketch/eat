@@ -1,0 +1,196 @@
+:root {
+  --bg: #faf7f2;
+  --surface: #ffffff;
+  --text: #2a2622;
+  --muted: #76706a;
+  --border: #e6e0d8;
+  --accent: #d9480f;
+  --accent-text: #ffffff;
+  --star: #f08c00;
+  --open: #2b8a3e;
+  --closed: #868e96;
+  --banner-bg: #fff4e6;
+  --banner-border: #ffc078;
+  --error: #c92a2a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1b1a18;
+    --surface: #252321;
+    --text: #ece8e3;
+    --muted: #a39d96;
+    --border: #3a3733;
+    --accent: #ff8a4c;
+    --accent-text: #1b1a18;
+    --star: #ffb84d;
+    --open: #69db7c;
+    --closed: #adb5bd;
+    --banner-bg: #3a2a1a;
+    --banner-border: #8a5a2a;
+    --error: #ff8787;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  line-height: 1.6;
+}
+
+.header, .main, .footer {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 16px;
+}
+
+.header { padding-top: 24px; }
+.title { margin: 0; font-size: 1.6rem; }
+.lead { margin: 4px 0 16px; color: var(--muted); }
+
+.search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.search-input {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+.search-input, .search-radius, .controls select {
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.btn {
+  font: inherit;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+.status { margin: 16px 0; color: var(--muted); }
+.status-error { color: var(--error); }
+
+.banner {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  background: var(--banner-bg);
+  border: 1px solid var(--banner-border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.center { margin: 16px 0 8px; font-weight: 600; }
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.controls label { display: flex; align-items: center; gap: 6px; }
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.tab {
+  flex: none;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.category { margin-bottom: 28px; }
+.category-title {
+  font-size: 1.15rem;
+  margin: 0 0 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.count { font-size: 0.85rem; color: var(--muted); font-weight: normal; }
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.card p { margin: 2px 0; }
+.card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.card-name { margin: 0; font-size: 1rem; }
+
+.badge {
+  flex: none;
+  font-size: 0.75rem;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+.badge-open { color: var(--open); }
+.badge-closed { color: var(--closed); }
+
+.rating { display: flex; align-items: baseline; gap: 6px; }
+.stars { color: var(--star); letter-spacing: 1px; }
+.rating-value { font-weight: 700; font-size: 1.05rem; }
+.reviews, .rating-none, .meta, .address { color: var(--muted); font-size: 0.85rem; }
+
+.links { display: flex; gap: 14px; margin-top: 6px !important; font-size: 0.9rem; }
+.links a { color: var(--accent); }
+
+.empty { color: var(--muted); }
+
+.footer {
+  margin-top: 40px;
+  padding-bottom: 24px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
