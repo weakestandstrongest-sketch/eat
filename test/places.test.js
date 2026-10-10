@@ -1,7 +1,14 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { classify } from '../lib/categories.js';
-import { distanceMeters, groupPlaces, normalize, searchRestaurants } from '../lib/places.js';
+import {
+  distanceMeters,
+  getPlaceDetails,
+  groupPlaces,
+  normalize,
+  normalizeDetails,
+  searchRestaurants,
+} from '../lib/places.js';
 
 const NAGOYA = { lat: 35.170915, lng: 136.881537 };
 
@@ -57,6 +64,8 @@ test('normalize は評価・価格・距離を整形する', () => {
   assert.equal(r.openNow, true);
   assert.ok(r.distance > 100 && r.distance < 120, `distance=${r.distance}`);
   assert.match(r.tabelogUrl, /^https:\/\/www\.google\.com\/search\?q=site%3Atabelog\.com/);
+  assert.match(r.hotpepperUrl, /site%3Ahotpepper\.jp/);
+  assert.equal(r.lat, NAGOYA.lat + 0.001);
 });
 
 test('distanceMeters: 名古屋駅〜栄 はおよそ 2.5km', () => {
@@ -73,7 +82,7 @@ test('searchRestaurants はジャンルごとに Nearby Search を呼び、API �
   const calls = [];
   globalThis.fetch = async (url, init) => {
     const body = JSON.parse(init.body);
-    calls.push({ url, headers: init.headers, body });
+    calls.push({ url: String(url), headers: init.headers, body });
     const places = body.includedTypes.includes('chinese_restaurant')
       ? [{ id: 'c1', displayName: { text: '中華' }, primaryType: 'chinese_restaurant', rating: 3.9, userRatingCount: 10 }]
       : [];
@@ -95,4 +104,62 @@ test('searchRestaurants は全リクエスト失敗時に API のエラーを投
   globalThis.fetch = async () =>
     new Response(JSON.stringify({ error: { message: 'API key not valid.' } }), { status: 400 });
   await assert.rejects(searchRestaurants({ ...NAGOYA, radius: 1000 }, 'BAD'), /API key not valid/);
+});
+
+test('searchRestaurants は rank=distance で DISTANCE 順を指定する', async () => {
+  const prefs = new Set();
+  globalThis.fetch = async (url, init) => {
+    prefs.add(JSON.parse(init.body).rankPreference);
+    return new Response(JSON.stringify({ places: [] }), { status: 200 });
+  };
+  await searchRestaurants({ ...NAGOYA, radius: 500, rank: 'distance' }, 'KEY');
+  assert.deepEqual([...prefs], ['DISTANCE']);
+});
+
+test('getPlaceDetails は詳細と写真 URL を取得する', async () => {
+  const calls = [];
+  globalThis.fetch = async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (String(url).includes('/media')) {
+      return new Response(JSON.stringify({ photoUri: 'https://lh3.example/photo' }), { status: 200 });
+    }
+    return new Response(JSON.stringify({
+      id: 'abc',
+      displayName: { text: 'テスト' },
+      photos: [{ name: 'places/abc/photos/p1', authorAttributions: [{ displayName: '撮影者', uri: 'https://maps.example/u' }] }],
+      reviews: [{ rating: 4, text: { text: 'おいしい' }, relativePublishTimeDescription: '1 週間前', authorAttribution: { displayName: '太郎' } }],
+    }), { status: 200 });
+  };
+
+  const d = await getPlaceDetails('abc', 'KEY');
+  assert.equal(calls[0].url, 'https://places.googleapis.com/v1/places/abc?languageCode=ja&regionCode=JP');
+  assert.equal(calls[0].init.method, 'GET');
+  assert.match(calls[0].init.headers['X-Goog-FieldMask'], /reviews/);
+  assert.equal(calls[1].url, 'https://places.googleapis.com/v1/places/abc/photos/p1/media?maxWidthPx=800&skipHttpRedirect=true');
+  assert.deepEqual(d.photos, [{ url: 'https://lh3.example/photo', author: '撮影者', authorUri: 'https://maps.example/u' }]);
+  assert.deepEqual(d.reviews, [{ author: '太郎', authorUri: null, rating: 4, text: 'おいしい', time: '1 週間前' }]);
+});
+
+test('getPlaceDetails は reservePhotos が 0 なら写真を取らない', async () => {
+  let mediaCalls = 0;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes('/media')) mediaCalls++;
+    return new Response(JSON.stringify({ id: 'abc', photos: [{ name: 'places/abc/photos/p1' }] }), { status: 200 });
+  };
+  const d = await getPlaceDetails('abc', 'KEY', { reservePhotos: () => 0 });
+  assert.equal(mediaCalls, 0);
+  assert.deepEqual(d.photos, []);
+});
+
+test('normalizeDetails は設備・支払い方法を日本語にする', () => {
+  const d = normalizeDetails({
+    id: 'x',
+    reservable: true,
+    takeout: false,
+    servesLunch: true,
+    paymentOptions: { acceptsCreditCards: true },
+    regularOpeningHours: { weekdayDescriptions: ['月曜日: 定休日'] },
+  });
+  assert.deepEqual(d.features, ['予約可', 'ランチ', 'クレジットカード可']);
+  assert.deepEqual(d.hours, ['月曜日: 定休日']);
 });

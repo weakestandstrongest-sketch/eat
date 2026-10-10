@@ -21,6 +21,10 @@
         <option value="2000">2km</option>
         <option value="3000">3km</option>
       </select>
+      <select id="rank" class="search-radius" aria-label="お店の集め方">
+        <option value="popularity">人気の店から</option>
+        <option value="distance">近い店から</option>
+      </select>
       <button class="btn btn-primary" type="submit">検索</button>
       <button id="here" class="btn" type="button">📍 現在地</button>
     </form>
@@ -58,9 +62,14 @@
     </section>
   </main>
 
+  <dialog id="detail" class="detail" aria-labelledby="detail-name">
+    <button id="detail-close" class="detail-close" type="button" aria-label="閉じる">×</button>
+    <div id="detail-body"></div>
+  </dialog>
+
   <footer class="footer">
     <p id="usage" class="usage" hidden></p>
-    評価・口コミ数のデータ提供: Google Maps ／ 「食べログで探す」は食べログ内の検索結果を開きます
+    評価・口コミ・写真のデータ提供: Google Maps ／ 「食べログで探す」「ホットペッパーで探す」は各サイト内の検索結果を開きます
   </footer>
 
   <script type="module" src="app.js"></script>

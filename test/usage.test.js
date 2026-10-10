@@ -48,6 +48,13 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
+test('remaining は残り回数を返す', () => {
+  const usage = createUsage({ file: tempFile(), limits: { text: 5, nearby: 10 } });
+  usage.reserve('nearby', 7);
+  assert.equal(usage.remaining('nearby'), 3);
+  assert.equal(usage.remaining('text'), 5);
+});
+
 test('上限に達したら Google を呼ばずに 429 を返す', async () => {
   let googleCalls = 0;
   const usage = createUsage({ file: tempFile(), limits: { text: 100, nearby: 10 } });
@@ -80,9 +87,47 @@ test('上限に達したら Google を呼ばずに 429 を返す', async () => {
     assert.equal(byName.status, 429);
     assert.equal(googleCalls, 7);
 
-    const summary = await (await fetch(`${base}/api/usage`)).json();
+    const summary = await (await fetch(`${base}/api/config`)).json();
     assert.equal(summary.usage.items.find((i) => i.kind === 'nearby').used, 7);
     assert.equal(summary.usage.items.find((i) => i.kind === 'text').used, 0);
+  } finally {
+    server.close();
+  }
+});
+
+test('写真は残りの枠の分だけ取り、詳細の枠がなければ 429', async () => {
+  const usage = createUsage({ file: tempFile(), limits: { text: 10, nearby: 10, details: 1, photo: 2 } });
+  const server = createApp({ apiKey: 'KEY', usage });
+  await new Promise((resolve) => server.listen(0, resolve));
+  const base = `http://localhost:${server.address().port}`;
+  const googleUrls = [];
+  globalThis.fetch = async (url, init) => {
+    if (String(url).startsWith(base)) return realFetch(url, init);
+    googleUrls.push(String(url));
+    if (String(url).includes('/media')) {
+      return new Response(JSON.stringify({ photoUri: `https://photo.example/${googleUrls.length}` }), { status: 200 });
+    }
+    return new Response(JSON.stringify({
+      id: 'abc',
+      displayName: { text: '店' },
+      photos: [1, 2, 3, 4].map((i) => ({ name: `places/abc/photos/p${i}` })),
+    }), { status: 200 });
+  };
+
+  try {
+    const res = await fetch(`${base}/api/place?id=abc`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.place.photos.length, 2);
+    assert.equal(googleUrls.filter((u) => u.includes('/media')).length, 2);
+    assert.deepEqual(
+      body.usage.items.filter((i) => ['details', 'photo'].includes(i.kind)).map((i) => i.used),
+      [1, 2],
+    );
+
+    const other = await fetch(`${base}/api/place?id=xyz`);
+    assert.equal(other.status, 429);
+    assert.equal(googleUrls.length, 3);
   } finally {
     server.close();
   }

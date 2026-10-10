@@ -178,10 +178,11 @@ body {
 .badge-open { color: var(--open); }
 .badge-closed { color: var(--closed); }
 
-.rating { display: flex; align-items: baseline; gap: 6px; }
+.rating { display: flex; flex-wrap: wrap; align-items: center; column-gap: 6px; }
 .stars { color: var(--star); letter-spacing: 1px; }
 .rating-value { font-weight: 700; font-size: 1.05rem; }
 .reviews, .rating-none, .meta, .address { color: var(--muted); font-size: 0.85rem; }
+.reviews { white-space: nowrap; }
 
 .links { display: flex; gap: 14px; margin-top: 6px !important; font-size: 0.9rem; }
 .links a { color: var(--accent); }
@@ -196,3 +197,127 @@ body {
 }
 .usage { margin: 0 0 6px; }
 .usage-warn { color: var(--error); font-weight: 600; }
+
+.card { cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.card:hover, .card:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 0.08);
+  outline: none;
+}
+
+.rating-source {
+  font-size: 0.7rem;
+  padding: 0 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+}
+
+.muted { color: var(--muted); }
+.small { font-size: 0.8rem; }
+.btn-small { padding: 4px 10px; font-size: 0.85rem; }
+
+/* ---- 詳細画面 ---- */
+.detail {
+  width: min(720px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+  padding: 20px 20px 24px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text);
+}
+.detail::backdrop { background: rgb(0 0 0 / 0.45); }
+.detail-close {
+  position: sticky;
+  top: 0;
+  float: right;
+  width: 36px;
+  height: 36px;
+  margin: -8px -8px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 1000;
+}
+.detail-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.detail-name { margin: 0; font-size: 1.3rem; }
+.detail p { margin: 4px 0; }
+.detail-section { margin-top: 20px; }
+.detail-section h3 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.map {
+  height: 280px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.map-frame { width: 100%; height: 100%; border: 0; }
+.map-error { padding: 16px; }
+.route-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 0.9rem; margin-top: 8px !important; }
+.dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+.dot-origin { background: #1c7ed6; }
+.dot-shop { background: #e8590c; }
+.route-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; font-size: 0.9rem; }
+.route-actions a, .detail .links a { color: var(--accent); }
+
+.photos {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 1fr);
+  gap: 8px;
+  overflow-x: auto;
+  margin-top: 16px;
+}
+.photo { margin: 0; }
+.photo img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  display: block;
+}
+.photo figcaption { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+.summary { margin-top: 12px !important; }
+
+.info {
+  display: grid;
+  grid-template-columns: 6em 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+.info dt { color: var(--muted); }
+.info dd { margin: 0; overflow-wrap: anywhere; }
+.info a { color: var(--accent); }
+.hours { list-style: none; margin: 0; padding: 0; }
+
+.features { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; padding: 0; }
+.features li {
+  font-size: 0.8rem;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+.reviews-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.review {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.review-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 0.85rem; }
+.review-head a { color: var(--text); }
+.review-text { white-space: pre-wrap; font-size: 0.9rem; }

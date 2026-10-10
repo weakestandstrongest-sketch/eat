@@ -37,6 +37,33 @@ test('緯度経度 (現在地) で検索できる', async () => {
   assert.equal(body.radius, 1000);
 });
 
+test('rank=distance を受け付けて結果に含める', async () => {
+  const body = await (await fetch(`${base}/api/search?lat=35.17&lng=136.88&rank=distance`)).json();
+  assert.equal(body.rank, 'distance');
+  const r = body.categories[0].restaurants[0];
+  assert.equal(typeof r.lat, 'number');
+  assert.equal(typeof r.lng, 'number');
+});
+
+test('店舗詳細を返す', async () => {
+  const res = await fetch(`${base}/api/place?id=demo-washoku-1`);
+  assert.equal(res.status, 200);
+  const { place } = await res.json();
+  assert.match(place.name, /まるやま/);
+  assert.equal(place.hours.length, 7);
+  assert.ok(place.reviews.length >= 3);
+});
+
+test('店舗詳細: 不正な ID は 400、存在しない ID は 404', async () => {
+  assert.equal((await fetch(`${base}/api/place?id=${encodeURIComponent('../x')}`)).status, 400);
+  assert.equal((await fetch(`${base}/api/place?id=nope`)).status, 404);
+});
+
+test('設定を返す', async () => {
+  const config = await (await fetch(`${base}/api/config`)).json();
+  assert.deepEqual(config, { demo: true, embedKey: null, usage: null });
+});
+
 test('場所の指定がなければ 400', async () => {
   const res = await fetch(`${base}/api/search`);
   assert.equal(res.status, 400);
