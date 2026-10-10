@@ -4,8 +4,11 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { geocode, searchRestaurants } from './lib/places.js';
 import { demoGeocode, demoSearch } from './lib/demo.js';
+import { CATEGORIES } from './lib/categories.js';
+import { createUsage, UsageLimitError } from './lib/usage.js';
 
-const PUBLIC_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), 'public');
+const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
 const MIME_TYPES = {
@@ -33,12 +36,24 @@ function createCache() {
   };
 }
 
-export function createApp({ apiKey = '', demo = !apiKey } = {}) {
+// usage を渡すと Google Places API の呼び出し回数を数えて月間上限で止める (デモでは不要)
+export function createApp({ apiKey = '', demo = !apiKey, usage = null } = {}) {
   const cached = createCache();
 
   const provider = demo
     ? { geocode: async (q) => demoGeocode(q), search: async (p) => demoSearch(p) }
-    : { geocode: (q) => geocode(q, apiKey), search: (p) => searchRestaurants(p, apiKey) };
+    : {
+        geocode: (q) => {
+          // 周辺検索の枠がもうないなら、地名検索の分も使わずに止める
+          usage?.ensure('nearby', CATEGORIES.length);
+          usage?.reserve('text', 1);
+          return geocode(q, apiKey);
+        },
+        search: (p) => {
+          usage?.reserve('nearby', CATEGORIES.length);
+          return searchRestaurants(p, apiKey);
+        },
+      };
 
   async function handleSearch(url, res) {
     const q = url.searchParams.get('q')?.trim();
@@ -60,7 +75,7 @@ export function createApp({ apiKey = '', demo = !apiKey } = {}) {
     const categories = await cached(key, () =>
       provider.search({ lat: center.lat, lng: center.lng, radius }),
     );
-    sendJson(res, 200, { demo, center, radius, categories });
+    sendJson(res, 200, { demo, center, radius, categories, usage: usage?.summary() ?? null });
   }
 
   async function serveStatic(url, res) {
@@ -88,10 +103,16 @@ export function createApp({ apiKey = '', demo = !apiKey } = {}) {
         res.writeHead(405).end();
       } else if (url.pathname === '/api/search') {
         await handleSearch(url, res);
+      } else if (url.pathname === '/api/usage') {
+        sendJson(res, 200, { demo, usage: usage?.summary() ?? null });
       } else {
         await serveStatic(url, res);
       }
     } catch (err) {
+      if (err instanceof UsageLimitError) {
+        sendJson(res, 429, { error: err.message, usage: usage?.summary() ?? null });
+        return;
+      }
       console.error(err);
       sendJson(res, 502, { error: `検索に失敗しました: ${err.message}` });
     }
@@ -107,8 +128,20 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const apiKey = process.env.GOOGLE_MAPS_API_KEY ?? '';
   const demo = !apiKey || process.env.DEMO === '1';
   const port = Number(process.env.PORT) || 3000;
-  createApp({ apiKey, demo }).listen(port, () => {
+  const usage = demo
+    ? null
+    : createUsage({
+        file: process.env.USAGE_FILE || path.join(ROOT_DIR, 'data', 'usage.json'),
+        limits: {
+          text: Number(process.env.MONTHLY_LIMIT_TEXT) || 5000,
+          nearby: Number(process.env.MONTHLY_LIMIT_NEARBY) || 1000,
+        },
+      });
+  createApp({ apiKey, demo, usage }).listen(port, () => {
     console.log(`http://localhost:${port}`);
     if (demo) console.log('デモモードで起動しました (架空のデータを表示します)');
+    for (const item of usage?.summary().items ?? []) {
+      console.log(`今月の${item.label}: ${item.used} / ${item.limit} 回`);
+    }
   });
 }

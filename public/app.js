@@ -39,6 +39,21 @@ function showStatus(message, isError = false) {
   status.classList.toggle('status-error', isError);
 }
 
+// 今月の Google Places API の利用回数 (デモモードでは usage が null)
+function renderUsage(usage) {
+  const box = $('usage');
+  box.hidden = !usage;
+  if (!usage) return;
+  box.replaceChildren(
+    `今月 (${usage.month}) の API 利用回数: `,
+    ...usage.items.flatMap((item, i) => [
+      i > 0 ? ' ／ ' : null,
+      el('span', { class: item.used / item.limit >= 0.8 ? 'usage-warn' : null },
+        `${item.label} ${item.used.toLocaleString('ja-JP')} / ${item.limit.toLocaleString('ja-JP')}回`),
+    ]).filter(Boolean),
+  );
+}
+
 async function search(params) {
   showStatus('検索中…');
   $('results').hidden = true;
@@ -47,6 +62,7 @@ async function search(params) {
   try {
     const res = await fetch(`/api/search?${query}`);
     const body = await res.json();
+    if (body.usage !== undefined) renderUsage(body.usage);
     if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
     state.data = body;
     state.tab = 'all';
@@ -171,6 +187,11 @@ $('here').addEventListener('click', () => {
 for (const id of ['sort', 'min-rating', 'open-now']) {
   $(id).addEventListener('change', () => state.data && render());
 }
+
+fetch('/api/usage')
+  .then((res) => res.json())
+  .then((body) => renderUsage(body.usage))
+  .catch(() => {});
 
 // ?q=名古屋駅 付きの URL で開いたらそのまま検索する
 const initial = new URLSearchParams(location.search);

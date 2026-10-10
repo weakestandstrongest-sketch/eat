@@ -194,3 +194,5 @@ body {
   font-size: 0.8rem;
   color: var(--muted);
 }
+.usage { margin: 0 0 6px; }
+.usage-warn { color: var(--error); font-weight: 600; }

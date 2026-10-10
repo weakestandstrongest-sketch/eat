@@ -44,12 +44,27 @@ API キーがなければ **デモモード**（架空の店舗データ）で�
 
 API キーはサーバー側だけで使い、ブラウザには渡しません。
 
-### 料金の目安
+### 料金と使いすぎ防止
 
 1 回の検索で Google Places API を最大 8 回呼びます（地名→座標の変換 1 回 + ジャンルごとの周辺検索 7 回）。
-同じ地点・範囲の検索結果はサーバーで 10 分間キャッシュします。
-Places API には毎月の無料枠がありますが、評価 (`rating`) などを含むリクエストは上位の料金区分になるため、
-公開して使う場合は [料金ページ](https://developers.google.com/maps/billing-and-pricing/pricing) を確認し、Cloud Console で割り当て上限を設定してください。
+同じ地点・範囲の検索結果はサーバーで 10 分間キャッシュし、その分は呼び出しません。
+
+Places API には料金区分ごとに毎月の無料枠があります。このアプリは呼び出し回数を数えて、
+**月間上限に届く検索は Google を呼ぶ前に止めます**（画面に「上限に達したため検索を止めています」と表示）。
+
+| 料金区分 | このアプリでの用途 | 上限の設定 | 既定値 |
+| --- | --- | --- | --- |
+| Text Search Pro | 地名 → 座標 | `MONTHLY_LIMIT_TEXT` | 5000 |
+| Nearby Search Enterprise | 評価付きの周辺検索 | `MONTHLY_LIMIT_NEARBY` | 1000 |
+
+既定値は無料枠の回数です（周辺検索 1000 回 ÷ 7 ≒ 月 140 検索）。無料枠は変わることがあるので
+[料金ページ](https://developers.google.com/maps/billing-and-pricing/pricing) で確認し、必要なら `.env` で変えてください。
+
+- 回数は `data/usage.json` に保存され、再起動しても引き継がれます（`USAGE_FILE` で場所を変更可）
+- Google の請求月に合わせて、太平洋時間の月初（日本時間で 1 日の 16 時か 17 時）にリセットされます
+- 今月の利用回数は画面下部に表示されます（8 割を超えると赤字）
+- サーバー 1 台で動かす前提です。複数台で動かすと台ごとに数えてしまいます
+- 念のため、Cloud Console の「割り当て」でも 1 日あたりの上限を設定しておくと二重の安全策になります
 
 ### 現在地について
 
@@ -66,6 +81,7 @@ npm test      # テスト (node:test)
 server.js            HTTP サーバー (/api/search と静的ファイル)
 lib/categories.js    ジャンル定義と Google の店舗タイプ → ジャンルの振り分け
 lib/places.js        Google Places API (New) の呼び出しと結果の整形
+lib/usage.js         API 呼び出し回数の記録と月間上限
 lib/demo.js          デモ用の架空データ
 public/              画面 (HTML / CSS / JS)
 test/                テスト
@@ -74,6 +90,9 @@ test/                テスト
 ### API
 
 `GET /api/search?q=名古屋駅&radius=1000` または `GET /api/search?lat=35.17&lng=136.88&radius=1000`
+
+月間上限に達していると `429` と `{ "error": "…", "usage": … }` を返します。
+今月の利用回数だけを見るときは `GET /api/usage` を使います。
 
 ```jsonc
 {
