@@ -4,9 +4,12 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createUsage, currentMonth } from '../lib/usage.js';
+import { fileStore } from '../lib/usage-file.js';
 import { createApp } from '../server.js';
 
 const tempFile = () => path.join(mkdtempSync(path.join(tmpdir(), 'eat-usage-')), 'data', 'usage.json');
+const newUsage = ({ file = tempFile(), ...rest }) => createUsage({ store: fileStore(file), ...rest });
+const used = async (usage, kind) => (await usage.summary()).items.find((i) => i.kind === kind).used;
 
 test('currentMonth は太平洋時間で月を区切る', () => {
   // 日本時間 11/1 09:00 = 太平洋時間 10/31 17:00
@@ -14,33 +17,39 @@ test('currentMonth は太平洋時間で月を区切る', () => {
   assert.equal(currentMonth(new Date('2026-11-01T08:00:00Z')), '2026-11');
 });
 
-test('上限までは確保でき、超える分は 1 回も数えずに止める', () => {
-  const usage = createUsage({ file: tempFile(), limits: { text: 5, nearby: 10 } });
-  usage.reserve('nearby', 7);
-  assert.throws(() => usage.reserve('nearby', 7), (err) => err.status === 429 && /上限 \(10回\)/.test(err.message));
-  usage.reserve('nearby', 3);
+test('上限までは確保でき、超える分は 1 回も数えずに止める', async () => {
+  const usage = newUsage({ limits: { text: 5, nearby: 10 } });
+  await usage.reserve('nearby', 7);
+  await assert.rejects(usage.reserve('nearby', 7), (err) => err.status === 429 && /上限 \(10回\)/.test(err.message));
+  await usage.reserve('nearby', 3);
   assert.deepEqual(
-    usage.summary().items.map(({ kind, used }) => [kind, used]),
+    (await usage.summary()).items.map(({ kind, used }) => [kind, used]),
     [['text', 0], ['nearby', 10]],
   );
 });
 
-test('回数はファイルに保存され、再起動後も引き継がれる', () => {
+test('回数はファイルに保存され、再起動後も引き継がれる', async () => {
   const file = tempFile();
-  createUsage({ file, limits: { text: 5, nearby: 10 } }).reserve('text', 2);
-  const restarted = createUsage({ file, limits: { text: 5, nearby: 10 } });
-  assert.equal(restarted.summary().items.find((i) => i.kind === 'text').used, 2);
+  await newUsage({ file, limits: { text: 5, nearby: 10 } }).reserve('text', 2);
+  assert.equal(await used(newUsage({ file, limits: { text: 5, nearby: 10 } }), 'text'), 2);
 });
 
-test('月が変わると回数がリセットされる', () => {
+test('月が変わると回数がリセットされる', async () => {
   let now = new Date('2026-10-15T00:00:00Z');
-  const usage = createUsage({ file: tempFile(), limits: { text: 5, nearby: 10 }, now: () => now });
-  usage.reserve('nearby', 10);
-  assert.throws(() => usage.reserve('nearby', 1));
+  const usage = newUsage({ limits: { text: 5, nearby: 10 }, now: () => now });
+  await usage.reserve('nearby', 10);
+  await assert.rejects(usage.reserve('nearby', 1));
   now = new Date('2026-11-15T00:00:00Z');
-  usage.reserve('nearby', 7);
-  assert.equal(usage.summary().month, '2026-11');
-  assert.equal(usage.summary().items.find((i) => i.kind === 'nearby').used, 7);
+  await usage.reserve('nearby', 7);
+  assert.equal((await usage.summary()).month, '2026-11');
+  assert.equal(await used(usage, 'nearby'), 7);
+});
+
+test('同時に確保しても上限を超えない', async () => {
+  const usage = newUsage({ limits: { text: 5, nearby: 10 } });
+  const results = await Promise.allSettled(Array.from({ length: 5 }, () => usage.reserve('nearby', 3)));
+  assert.equal(results.filter((r) => r.status === 'fulfilled').length, 3);
+  assert.equal(await used(usage, 'nearby'), 9);
 });
 
 const realFetch = globalThis.fetch;
@@ -48,16 +57,17 @@ afterEach(() => {
   globalThis.fetch = realFetch;
 });
 
-test('remaining は残り回数を返す', () => {
-  const usage = createUsage({ file: tempFile(), limits: { text: 5, nearby: 10 } });
-  usage.reserve('nearby', 7);
-  assert.equal(usage.remaining('nearby'), 3);
-  assert.equal(usage.remaining('text'), 5);
+test('reserveUpTo は残っている分だけ確保する', async () => {
+  const usage = newUsage({ limits: { text: 5, nearby: 10 } });
+  await usage.reserve('nearby', 8);
+  assert.equal(await usage.reserveUpTo('nearby', 3), 2);
+  assert.equal(await usage.reserveUpTo('nearby', 3), 0);
+  assert.equal(await used(usage, 'nearby'), 10);
 });
 
 test('上限に達したら Google を呼ばずに 429 を返す', async () => {
   let googleCalls = 0;
-  const usage = createUsage({ file: tempFile(), limits: { text: 100, nearby: 10 } });
+  const usage = newUsage({ limits: { text: 100, nearby: 10 } });
   const server = createApp({ apiKey: 'KEY', usage });
   await new Promise((resolve) => server.listen(0, resolve));
   const base = `http://localhost:${server.address().port}`;
@@ -96,7 +106,7 @@ test('上限に達したら Google を呼ばずに 429 を返す', async () => {
 });
 
 test('写真は残りの枠の分だけ取り、詳細の枠がなければ 429', async () => {
-  const usage = createUsage({ file: tempFile(), limits: { text: 10, nearby: 10, details: 1, photo: 2 } });
+  const usage = newUsage({ limits: { text: 10, nearby: 10, details: 1, photo: 2 } });
   const server = createApp({ apiKey: 'KEY', usage });
   await new Promise((resolve) => server.listen(0, resolve));
   const base = `http://localhost:${server.address().port}`;

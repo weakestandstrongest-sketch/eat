@@ -7,9 +7,14 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
+    "deploy": "npm install --no-audit --no-fund && node scripts/deploy.js",
+    "dev:worker": "wrangler dev",
     "test": "node --test"
   },
   "engines": {
     "node": ">=20.12"
+  },
+  "devDependencies": {
+    "wrangler": "4.137.0"
   }
 }

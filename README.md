@@ -26,7 +26,7 @@
 
 ## 使い方
 
-Node.js 20.12 以上が必要です。外部パッケージは使っていません。
+Node.js 20.12 以上が必要です。PC で動かすだけなら `npm install` は不要です（外部パッケージを使っていません）。
 
 ```sh
 npm start          # http://localhost:3000
@@ -93,6 +93,34 @@ Places API には料金区分ごとに毎月の無料枠があります。この
 
 ブラウザの位置情報は `https://` か `http://localhost` でしか使えません。
 
+## iPhone で外から使う（Cloudflare Workers に置く）
+
+アプリを [Cloudflare Workers](https://workers.cloudflare.com/)（無料プラン）に置くと、
+`https://eat.〇〇.workers.dev` の URL で、PC の電源を切っていてもどこからでも使えます。
+
+**準備**: 上の「実データで動かす」を済ませ、`.env` に `GOOGLE_MAPS_API_KEY` が書かれていること。
+
+1. https://dash.cloudflare.com/sign-up で Cloudflare のアカウントを作る（無料・カード不要）
+2. アプリのフォルダで次を実行する
+
+   ```sh
+   npm run deploy
+   ```
+
+   - 初回はアプリを開くときの**パスワード**を聞かれます（8 文字以上。`.env` の `APP_PASSWORD` に保存されます）
+   - ブラウザが開いたら Cloudflare にログインして「Allow」を押します
+   - `workers.dev` のサブドメイン（URL の〇〇の部分）を聞かれたら、好きな英数字を入れます
+3. 最後に表示される `https://eat.〇〇.workers.dev` を iPhone の Safari で開き、パスワードを入れる
+4. 共有ボタン →「ホーム画面に追加」でアイコンにする
+
+アプリを直したときや `.env` を変えたときは、もう一度 `npm run deploy` を実行すると反映されます。
+
+- URL を知っている人でも、パスワードを知らなければ API を使えません（Google の無料枠を他人に使われないため）
+- 使用回数は Cloudflare の Durable Object に保存され、月間上限もそのまま効きます。
+  PC 版（`data/usage.json`）とは別に数えるので、両方で使うと合計が上限を超えることがあります
+- Maps Embed API のキーを使う場合は、HTTP リファラー制限に `https://eat.〇〇.workers.dev/*` を追加してください
+- Cloudflare 上の動きを PC で試すときは `npm run dev:worker`（`npm install` が必要）
+
 ## 開発
 
 ```sh
@@ -101,12 +129,17 @@ npm test      # テスト (node:test)
 ```
 
 ```
-server.js            HTTP サーバー (/api/* と静的ファイル)
+server.js            PC 用の HTTP サーバー (/api/* は lib/app.js、画面は public/)
+worker.js            Cloudflare Workers 用の入口と、回数を保存する Durable Object
+wrangler.jsonc       Cloudflare Workers の設定
+scripts/deploy.js    npm run deploy の中身 (ログイン・アップロード・キーの登録)
+lib/app.js           /api/* と /login の処理 (PC と Cloudflare で共通)
 lib/categories.js    ジャンル定義と Google の店舗タイプ → ジャンルの振り分け
 lib/places.js        Google Places API (New) の呼び出しと結果の整形
 lib/usage.js         API 呼び出し回数の記録と月間上限
+lib/usage-file.js    PC 版の回数の保存先 (data/usage.json)
 lib/demo.js          デモ用の架空データ
-public/              画面 (HTML / CSS / JS)
+public/              画面 (HTML / CSS / JS / アイコン / manifest)
 test/                テスト
 ```
 
@@ -118,8 +151,10 @@ test/                テスト
 | `GET /api/search?lat=35.17&lng=136.88&radius=1000` | 緯度経度（現在地）で検索 |
 | `GET /api/place?id=<店舗ID>` | お店の詳細（写真・営業時間・口コミなど） |
 | `GET /api/config` | デモモードか、Embed 用キー、今月の利用回数 |
+| `GET /login` / `POST /login` | ログイン画面 / パスワードを確かめて Cookie を発行（パスワード設定時のみ） |
 
 月間上限に達していると `429` と `{ "error": "…", "usage": … }` を返します。
+パスワードを設定していてログインしていないと `401` を返し、画面はログイン画面に移ります。
 
 `/api/search` の結果:
 

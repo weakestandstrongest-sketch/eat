@@ -321,3 +321,10 @@ body {
 .review-head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; font-size: 0.85rem; }
 .review-head a { color: var(--text); }
 .review-text { white-space: pre-wrap; font-size: 0.9rem; }
+
+/* iPhone で入力欄を押したときに画面が拡大されないよう、文字を 16px 以上にする */
+@media (pointer: coarse) {
+  input, select, .search-input, .search-radius, .controls select { font-size: 16px; }
+}
+
+.login { padding-top: 48px; max-width: 480px; }

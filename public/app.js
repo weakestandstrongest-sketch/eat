@@ -73,6 +73,16 @@ function renderUsage(usage) {
   );
 }
 
+// API を呼んで { res, body } を返す。ログインが必要ならログイン画面へ移る
+async function getJson(url) {
+  const res = await fetch(url);
+  if (res.status === 401) {
+    location.href = '/login';
+    return new Promise(() => {});
+  }
+  return { res, body: await res.json() };
+}
+
 async function search(params) {
   showStatus('検索中…');
   $('results').hidden = true;
@@ -80,8 +90,7 @@ async function search(params) {
   const rank = $('rank').value;
   const query = new URLSearchParams({ ...params, radius, rank });
   try {
-    const res = await fetch(`/api/search?${query}`);
-    const body = await res.json();
+    const { res, body } = await getJson(`/api/search?${query}`);
     if (body.usage !== undefined) renderUsage(body.usage);
     if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
     state.data = body;
@@ -229,6 +238,11 @@ function origin() {
   return { lat: center.lat, lng: center.lng, label: center.name === '現在地' ? '現在地' : `検索地点（${center.name}）` };
 }
 
+function appleMapsUrl(from, r) {
+  const params = new URLSearchParams({ saddr: `${from.lat},${from.lng}`, daddr: `${r.lat},${r.lng}`, dirflg: 'w' });
+  return `https://maps.apple.com/?${params}`;
+}
+
 function directionsUrl(from, r) {
   const params = new URLSearchParams({
     api: '1',
@@ -261,8 +275,7 @@ async function openDetail(r) {
   renderRoute(r);
 
   try {
-    const res = await fetch(`/api/place?${new URLSearchParams({ id: r.id })}`);
-    const json = await res.json();
+    const { res, body: json } = await getJson(`/api/place?${new URLSearchParams({ id: r.id })}`);
     if (json.usage !== undefined) renderUsage(json.usage);
     if (!res.ok) throw new Error(json.error ?? `HTTP ${res.status}`);
     if ($('detail-name')?.textContent === r.name) $('detail-more').replaceChildren(...detailSections(json.place, r).filter(Boolean));
@@ -296,7 +309,8 @@ function renderRoute(r) {
       el('strong', {}, `　直線で${formatWalk(dist)}`),
     ),
     el('p', { class: 'route-actions' },
-      link(directionsUrl(from, r), 'Googleマップで道順を見る'),
+      link(directionsUrl(from, r), 'Googleマップで道順'),
+      link(appleMapsUrl(from, r), 'Appleマップで道順'),
       hereButton,
     ),
   );
@@ -369,7 +383,7 @@ function drawMap(box, from, r) {
       state.map = map;
     })
     .catch(() => {
-      box.replaceChildren(el('p', { class: 'muted map-error' }, '地図を読み込めませんでした。下のリンクから Google マップで確認できます。'));
+      box.replaceChildren(el('p', { class: 'muted map-error' }, '地図を読み込めませんでした。下のリンクから地図アプリで確認できます。'));
     });
 }
 
@@ -485,9 +499,8 @@ for (const id of ['sort', 'min-rating', 'open-now']) {
   $(id).addEventListener('change', () => state.data && render());
 }
 
-fetch('/api/config')
-  .then((res) => res.json())
-  .then((config) => {
+getJson('/api/config')
+  .then(({ body: config }) => {
     state.config = config;
     renderUsage(config.usage);
   })
