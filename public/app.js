@@ -129,7 +129,7 @@ function render() {
 
   $('tabs').replaceChildren(
     tabButton('all', `すべて (${total})`),
-    ...categories.map((c) => tabButton(c.id, `${c.emoji} ${c.label} (${c.restaurants.length})`)),
+    ...categories.map((c) => tabButton(c.id, `${c.label} ${c.restaurants.length}`)),
   );
 
   const visible = state.tab === 'all' ? categories : categories.filter((c) => c.id === state.tab);
@@ -137,7 +137,7 @@ function render() {
     .filter((c) => c.restaurants.length > 0 || state.tab !== 'all')
     .map((c) =>
       el('section', { class: 'category' },
-        el('h2', { class: 'category-title' }, `${c.emoji} ${c.label}`, el('span', { class: 'count' }, `${c.restaurants.length}件`)),
+        el('h2', { class: 'category-title' }, c.label, el('span', { class: 'count' }, `${c.restaurants.length}件`)),
         c.restaurants.length
           ? el('ul', { class: 'cards' }, ...c.restaurants.map(card))
           : el('p', { class: 'empty' }, '条件に合うお店がありません'),
@@ -298,7 +298,7 @@ function renderRoute(r) {
   const mapBox = el('div', { class: 'map' });
   const hereButton = state.here || state.data.center.name === '現在地'
     ? null
-    : el('button', { class: 'btn btn-small', type: 'button' }, '📍 現在地からにする');
+    : el('button', { class: 'btn btn-small', type: 'button' }, '現在地からにする');
   hereButton?.addEventListener('click', () => useCurrentLocation(r, hereButton));
 
   box.replaceChildren(

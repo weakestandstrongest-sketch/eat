@@ -1,6 +1,6 @@
 {
-  "name": "ごはんサーチ",
-  "short_name": "ごはん",
+  "name": "Dine",
+  "short_name": "Dine",
   "description": "周りのお店をジャンル別・評価付きで探す",
   "lang": "ja",
   "start_url": "/",

@@ -328,3 +328,53 @@ body {
 }
 
 .login { padding-top: 48px; max-width: 480px; }
+
+/* ───────── ひび手帳の見た目（Dine） ─────────
+   ひび手帳と同じ色（ライトは薄いベージュに紺の字とコーラルピンク、ダークは黒）、丸みのある書体、
+   角の丸いカードと丸いボタン。見出しは、ひび手帳の各画面と同じく日本語に筆記体の英語を添える */
+:root {
+  --bg: #F5EFEB; --surface: #FFFFFF; --surface-2: #FAF6F3; --text: #232A5C; --muted: #6D7092; --border: #E9E1DB;
+  --accent: #E07F78; --accent-text: #FFFFFF; --star: #E9A23B; --open: #1FA046; --closed: #A9AABD;
+  --banner-bg: #FAF6F3; --banner-border: #E9E1DB; --error: #D45850; --shadow: 0 6px 22px rgba(35, 42, 92, .08);
+  --f-body: ui-rounded, "SF Pro Rounded", "Hiragino Sans", "Zen Maru Gothic", "Noto Sans JP", system-ui, sans-serif;
+  --f-script: "Allura", "Snell Roundhand", "Apple Chancery", cursive;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000000; --surface: #101012; --surface-2: #1C1C1D; --text: #F2F1F4; --muted: #BDBDC6; --border: #303034;
+    --accent: #EF8A82; --accent-text: #1A1414; --star: #EDAE52; --open: #34C759; --closed: #A0A0AA;
+    --banner-bg: #1C1C1D; --banner-border: #303034; --error: #F07D74; --shadow: none;
+  }
+}
+body { font-family: var(--f-body); -webkit-tap-highlight-color: transparent; }
+.header { padding-top: calc(18px + env(safe-area-inset-top, 0px)); }
+.footer { padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+.title { display: flex; align-items: baseline; gap: 10px; font-size: 30px; font-weight: 700; letter-spacing: .01em; }
+.title .script { font-family: var(--f-script); font-weight: 400; font-size: 32px; color: var(--accent); line-height: 1; }
+.lead { font-size: 13px; }
+.search { background: var(--surface); border-radius: 22px; padding: 12px; box-shadow: var(--shadow); }
+.search-input, .search-radius, .controls select { border: 0; border-radius: 14px; background: var(--surface-2); padding: 10px 12px; }
+.search-input { flex-basis: 100%; }
+.btn { border: 0; border-radius: 999px; background: var(--surface-2); padding: 10px 16px; font-weight: 700; }
+.btn-primary { background: var(--accent); color: var(--accent-text); }
+.btn-here { display: inline-flex; align-items: center; gap: 6px; }
+.btn-here svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.banner { border: 0; border-radius: 16px; }
+.center { font-size: 15px; }
+.tab { border: 0; background: var(--surface); padding: 8px 14px; font-weight: 700; box-shadow: var(--shadow); }
+.tab-active { background: var(--accent); color: var(--accent-text); }
+.category-title { font-size: 17px; }
+.cards { gap: 10px; }
+.card { border: 0; border-radius: 20px; padding: 14px 16px; box-shadow: var(--shadow); }
+.card:hover, .card:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
+.card-name { font-size: 16px; }
+.badge { border: 0; padding: 2px 9px; font-weight: 700; background: color-mix(in srgb, currentColor 14%, transparent); }
+.rating-source { border: 0; background: var(--surface-2); border-radius: 999px; }
+.links a, .route-actions a, .detail .links a, .info a { text-decoration: none; font-weight: 700; }
+.detail { border: 0; border-radius: 26px; padding: 22px 20px 26px; }
+.detail-close { border: 0; background: var(--surface-2); }
+.detail-section h3 { border-bottom: 0; font-size: 15px; }
+.map { border: 0; border-radius: 18px; }
+.photo img { border-radius: 14px; }
+.features li { border: 0; background: var(--surface-2); }
+.review { border: 0; border-radius: 16px; }

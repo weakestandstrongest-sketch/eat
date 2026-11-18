@@ -72,7 +72,7 @@ test('場所の指定がなければ 400', async () => {
 test('トップページと静的ファイルを返す', async () => {
   const res = await fetch(`${base}/`);
   assert.equal(res.status, 200);
-  assert.match(await res.text(), /ごはんサーチ/);
+  assert.match(await res.text(), /Dine/);
   assert.equal((await fetch(`${base}/app.js`)).headers.get('content-type'), 'text/javascript; charset=utf-8');
 });
 
