@@ -380,12 +380,22 @@ body { font-family: var(--f-body); -webkit-tap-highlight-color: transparent; }
 .review { border: 0; border-radius: 16px; }
 
 /* ───────── iPhone（Air など）の画面に合わせる ───────── */
-/* ログイン：時計の下からはじめ、入力欄とボタンを横いっぱいに */
-.login { padding-top: calc(28px + env(safe-area-inset-top, 0px)); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-.login .title { margin-bottom: 2px; }
-.login .search { flex-direction: column; gap: 10px; }
-.login .search-input, .login .btn { width: 100%; }
-.login .btn { padding: 14px; font-size: 16px; }
+/* ログイン：画面の真ん中より少し上に、ひとまとまりのカードとして置く。
+   見出し・説明・入力欄・ボタンを同じ幅・同じ丸み・ゆったりした間隔でそろえる */
+.login {
+  min-height: 100vh; min-height: 100dvh; max-width: 420px; margin: 0 auto; box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: center; align-items: stretch;
+  padding: calc(24px + env(safe-area-inset-top, 0px)) max(24px, env(safe-area-inset-right, 0px)) calc(12vh + env(safe-area-inset-bottom, 0px)) max(24px, env(safe-area-inset-left, 0px));
+}
+.login .title { justify-content: center; margin: 0; font-size: 32px; }
+.login .title .script { font-size: 36px; }
+.login .lead { text-align: center; margin: 10px 0 28px; font-size: 14px; letter-spacing: .04em; }
+.login .search { flex-direction: column; flex-wrap: nowrap; gap: 16px; padding: 18px; border-radius: 28px; margin: 0; }
+.login .search-input, .login .btn { flex: none; width: 100%; box-sizing: border-box; height: 52px; border-radius: 16px; font-size: 16px; }
+.login .search-input { padding: 0 18px; text-align: center; letter-spacing: .08em; }
+.login .search-input:focus { outline: none; box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 55%, transparent); }
+.login .btn { padding: 0; letter-spacing: .12em; }
+.login .status { text-align: center; margin-top: 16px; }
 
 /* お店の詳しい画面：iPhone では画面いっぱいのシートにして、時計の下・ホームバーの上に収める */
 @media (max-width: 720px) {
